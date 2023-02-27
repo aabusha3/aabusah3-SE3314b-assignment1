@@ -46,7 +46,7 @@ module.exports = {
             console.log('ITP packet received:');
             printPacketBit(buff1);
             printPacketBit(buff2);
-            console.log(`\nClient-${seqNum} requests:\n    --ITP Version: ${ver}\n    --Timestamp: ${singleton.getTimestamp()}\n    --Request Type: Query\n    --Image file exension(s): ${ext}\n    --Image file name: ${name}`);
+            console.log(`\nClient-${seqNum} requests:\n    --ITP Version: ${ver}\n    --Timestamp: ${timeStamp}\n    --Request Type: Query\n    --Image file exension(s): ${ext}\n    --Image file name: ${name}`);
            
             let responsePacket = ITPpacket;
             responsePacket.init(name, ext, seqNum, timeStamp, ver)

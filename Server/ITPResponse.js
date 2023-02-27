@@ -49,6 +49,10 @@ module.exports = {
         for (let p = 0; p < payload.length; p++)
             packet[p + header.length] = payload[p];
             
+
+        console.log(ver)
+        console.log(parseBitPacket(header, 0, 4))
+        console.log(parseBitPacket(packet, 0, 4))
     
         packet_send = packet;
     },
@@ -61,6 +65,18 @@ module.exports = {
         return packet_send;
     }
 };
+
+function parseBitPacket(packet, offset, length) {
+    let number = "";
+    for (var i = 0; i < length; i++) {
+        // let us get the actual byte position of the offset
+        let bytePosition = Math.floor((offset + i) / 8);
+        let bitPosition = 7 - ((offset + i) % 8);
+        let bit = (packet[bytePosition] >> bitPosition) % 2;
+        number = (number << 1) | bit;
+    }
+    return number;
+}
 
 //// Some usefull methods ////
 // Feel free to use them, but DON NOT change or add any code in these methods.
