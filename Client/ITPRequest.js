@@ -8,7 +8,7 @@ module.exports = {
     let name = query.split('.')[0];
     let ext = query.split('.')[1];
 
-    let packet = new Buffer.allocUnsafe(12 + name.split('').length);
+    let packet = new Buffer.alloc(12 + name.split('').length);
 
     let IT ='';
     switch(ext){  //determine the image file ext in bits
@@ -56,7 +56,7 @@ module.exports = {
 
 setInterval(tick, 10);  //check the timer every 10s
 function tick(){    //tick the timer
-    if (timeStamp >= Math.pow(2, 32) - 1)
+    if ((timeStamp >= (Math.pow(2, 32) - 1)) || (timeStamp < 0))
       timeStamp = Math.ceil(Math.random()*999);
     timeStamp++; 
 }

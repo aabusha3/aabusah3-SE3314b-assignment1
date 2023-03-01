@@ -7,14 +7,14 @@ let singleton = require('./Singleton');
 module.exports = {
     handleClientJoining: function (sock) {
         sock.on('data',function(data){
-            let buff1 = Buffer.allocUnsafe(12);
+            let buff1 = Buffer.alloc(12);
             data.copy(buff1, 0, 0, 12);
 
             let ver = parseBitPacket(data, 0, 4);
 
-            let buff2 = Buffer.allocUnsafe(data.length - 12);//copy the payload to a new buffer
+            let buff2 = Buffer.alloc(data.length - 12);//copy the payload to a new buffer
             data.copy(buff2, 0, 12, data.length);
-            let name = bytesToString(buff2)//cut off the last char bc its broken idk
+            let name = bytesToString(buff2)
 
             let extNum = parseBitPacket(data, 64, 4);
             let ext = '';
@@ -51,13 +51,12 @@ module.exports = {
             let responsePacket = ITPpacket;
             responsePacket.init(name, ext, seqNum, timeStamp, ver)
             sock.write(responsePacket.getPacket())
-
+ 
             sock.end();
             console.log(`\nClient-${seqNum} closed the connection`);
         })
     }
 };
-
 
 //// Some usefull methods ////
 // Feel free to use them, but DON NOT change or add any code in these methods.

@@ -5,18 +5,10 @@ let packet_send;
 module.exports = {
 
     init: function (name, ext, seqNum, timeStamp, ver) { 
-        // let packet = new Buffer.allocUnsafe(12);
-        
-        // let Name = '';
-        // for (let i = 0; i < name.length - 1; i++){    //for some reason an extra char is added to my string
-        //     Name += name.charAt(i);
-        // }
-        // console.log(':'+Name+':')
-        // console.log(':'+name+':')
         let fileName = `${name}.${ext}`
 
         let imgLoc = `./images/${fileName}`;
-        let imgData;
+        let imgData = '';
         let imgSize = 0;
         let found = false;
 
@@ -28,7 +20,7 @@ module.exports = {
                 imgSize = fs.statSync(imgLoc).size
             }
         }
-        let header = new Buffer.allocUnsafe(12);
+        let header = new Buffer.alloc(12);
         storeBitPacket(header, ver, 0, 4);
 
         if (found) storeBitPacket(header, 1, 4, 8);//store response type = 1
@@ -38,8 +30,7 @@ module.exports = {
         storeBitPacket(header, timeStamp, 32, 32);
         storeBitPacket(header, imgSize, 64, 32);
 
-
-        let payload = new Buffer.alloc(imgData.length + 4);
+        let payload = new Buffer.alloc(imgData.length );
         for (i = 0; i < imgData.length; i++) 
             payload[i] = imgData[i];
         
@@ -50,11 +41,9 @@ module.exports = {
             packet[p + header.length] = payload[p];
             
 
-        console.log(ver)
-        console.log(parseBitPacket(header, 0, 4))
-        console.log(parseBitPacket(packet, 0, 4))
-    
         packet_send = packet;
+
+        return found;
     },
 
     //--------------------------
@@ -65,18 +54,6 @@ module.exports = {
         return packet_send;
     }
 };
-
-function parseBitPacket(packet, offset, length) {
-    let number = "";
-    for (var i = 0; i < length; i++) {
-        // let us get the actual byte position of the offset
-        let bytePosition = Math.floor((offset + i) / 8);
-        let bitPosition = 7 - ((offset + i) % 8);
-        let bit = (packet[bytePosition] >> bitPosition) % 2;
-        number = (number << 1) | bit;
-    }
-    return number;
-}
 
 //// Some usefull methods ////
 // Feel free to use them, but DON NOT change or add any code in these methods.

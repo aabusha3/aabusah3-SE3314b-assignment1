@@ -11,16 +11,14 @@ let sF = process.argv.indexOf('-s') + 1,
     vF = process.argv.indexOf('-v') + 1,
     ip = process.argv[sF].split(':')[0],
     port = process.argv[sF].split(':')[1],
-    buff2,
-    imgData;
-//let requestPacket = ITPpacket.getBytePacket(process.argv[qF]);
+    buff2;
 
-//console.log(requestPacket)
 
 const socket = net.Socket();
+const imgname = process.argv[qF];
 socket.connect(port, ip, function(){
   let requestPacket = ITPpacket;
-  requestPacket.init(process.argv[qF], parseInt(process.argv[vF]));
+  requestPacket.init(imgname, parseInt(process.argv[vF]));
   console.log('Connected to ImageDB server on: ' + ip +':'+ port)
 
   socket.write(requestPacket.getBytePacket());
@@ -45,37 +43,66 @@ socket.connect(port, ip, function(){
         break;
     }
 
-    let buff1 = Buffer.allocUnsafe(12);
+    let buff1 = Buffer.alloc(12);
     data.copy(buff1, 0, 0, 12);
 
-    buff2 = Buffer.allocUnsafe(data.length - 12);//copy the buff2 to a new buffer
+    buff2 = Buffer.alloc(data.length - 12);//copy the buff2 to a new buffer
     data.copy(buff2, 0, 12, data.length);
       
     let seqNum = parseBitPacket(data, 12, 20);
-    let timeStamp = parseBitPacket(data, 32, 32);
+    let timeStamp = twosToNormal(data, 32, 32);
     let imgSize = parseBitPacket(data, 64, 32);
     imgData = parseBitPacket(data, 96, imgSize*8);
 
     console.log('\nITP packet header received:');
     printPacketBit(buff1);
     console.log(`\nServer sent:\n    --ITP Version = ${ver}\n    --Response Type = ${resType}\n    --Sequence Number = ${seqNum}\n    --Timestamp = ${timeStamp}\n`);
+
+    if(resType === 'Not found')
+      console.log(`${imgname} was not found`);
+    
   })
 
   socket.on('end', function(){
-    fs.writeFileSync(process.argv[qF], buff2);
-    (async () => {
-        await open(process.argv[qF], { wait: true });
-        process.exit(1);
-    })();
-
-    console.log("Disconnected from the server");
+    if(buff2.length > 0) {
+      fs.writeFileSync(imgname, buff2);
+      (async () => {
+          await open(imgname, { wait: true });
+          process.exit(1);
+      })();
+    }
     socket.end();
   })
 
   socket.on("close", function () {
+    console.log("Disconnected from the server");
     console.log("Connection closed");
+    if(buff2.length <= 0) process.exit(0);
   });
 })
+
+function twosToNormal(packet, offset, length){
+  var num = parseBitPacket(packet, offset, length);
+  if(num < 0){
+    num = num.toString(2)
+    var n = num.length;
+    var i;
+    for (i = n - 1; i >= 0; i--)
+        if (num.charAt(i) == '1')
+            break;
+
+    if (i == -1)
+        return "1" + num;
+
+    for (k = i - 1; k >= 0; k--) {
+        if (num.charAt(k) == '1')
+            num = num.substring(0,k)+"0"+num.substring(k+1, num.length);
+        else
+            num = num.substring(0,k)+"1"+num.substring(k+1, num.length);
+    }
+  }
+  return num;
+}
 //// Some usefull methods ////
 // Feel free to use them, but DON NOT change or add any code in these methods.
 
