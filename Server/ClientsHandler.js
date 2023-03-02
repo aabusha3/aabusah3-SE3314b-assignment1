@@ -1,24 +1,28 @@
 let ITPpacket = require('./ITPResponse');
 let singleton = require('./Singleton');
 
-// You may need to add some delectation here
-
-
 module.exports = {
     handleClientJoining: function (sock) {
-        sock.on('data',function(data){
-            let buff1 = Buffer.alloc(12);
-            data.copy(buff1, 0, 0, 12);
+        sock.on('data',function(data){//on request recieve
+            let header = Buffer.alloc(12);//create 12 byte space for header
+            data.copy(header, 0, 0, 12);//copy first 12 bytes into header
 
-            let ver = parseBitPacket(data, 0, 4);
+            let ver = parseBitPacket(data, 0, 4);//get version
+            let reqType = parseBitPacket(data, 24, 8);//get request type
 
-            let buff2 = Buffer.alloc(data.length - 12);//copy the payload to a new buffer
-            data.copy(buff2, 0, 12, data.length);
-            let name = bytesToString(buff2)
+            if(ver !== 7 || reqType !== 0) {
+                if(ver !== 7) console.log('Wrong Version Number, Request Ignored');//print error message
+                if(reqType !== 0) console.log('Wrong Request Type, Request Ignored');//print error message
+                return sock.end();//end socket connection
+            }
 
-            let extNum = parseBitPacket(data, 64, 4);
+            let payload = Buffer.alloc(data.length - 12);//create space for request payload with the image's size
+            data.copy(payload, 0, 12, data.length);//copy image name into payload
+            let name = bytesToString(payload);//get the image name from payload
+
+            let extNum = parseBitPacket(data, 64, 4);//get extension number
             let ext = '';
-            switch(extNum){
+            switch(extNum){//convert extension number to a usable extension
                 case 1:
                     ext = 'bmp';
                     break;
@@ -39,21 +43,22 @@ module.exports = {
                     break;
             }
 
-            let seqNum = singleton.getSequenceNumber();
-            let timeStamp = singleton.getTimestamp();
+            let seqNum = singleton.getSequenceNumber();//get sequence number
+            let timeStamp = singleton.getTimestamp();//get time
             
+            //print request info in correct format
             console.log(`\nClient-${seqNum} is connected at timestamp: ${timeStamp}\n`);
             console.log('ITP packet received:');
-            printPacketBit(buff1);
-            printPacketBit(buff2);
+            printPacketBit(header);
+            printPacketBit(payload);
             console.log(`\nClient-${seqNum} requests:\n    --ITP Version: ${ver}\n    --Timestamp: ${timeStamp}\n    --Request Type: Query\n    --Image file exension(s): ${ext}\n    --Image file name: ${name}`);
            
             let responsePacket = ITPpacket;
-            responsePacket.init(name, ext, seqNum, timeStamp, ver)
-            sock.write(responsePacket.getPacket())
+            responsePacket.init(name+'.'+ext, seqNum, timeStamp, ver);//fill response pacjet
+            sock.write(responsePacket.getPacket());//write response to client
  
-            sock.end();
-            console.log(`\nClient-${seqNum} closed the connection`);
+            sock.end();//end socket connection
+            console.log(`\nClient-${seqNum} closed the connection`);//print goodbye message
         })
     }
 };

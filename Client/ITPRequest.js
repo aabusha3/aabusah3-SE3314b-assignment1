@@ -1,64 +1,59 @@
-// You may need to add some delectation here
-let bytePacket;
-let timeStamp = Math.ceil(Math.random()*999);
+let packet;//the request packet to be sent
+let timeStamp = Math.ceil(Math.random()*999);//initialize time with random number between 1 and 999
 
 module.exports = {
   init: function (query, version) {
-    //need packet to be dynamic size, needs to fit all the bytes
-    let name = query.split('.')[0];
-    let ext = query.split('.')[1];
+    let name = query.split('.')[0];//get name of the image
+    let ext = query.split('.')[1].toLowerCase();//get extension of the image
 
-    let packet = new Buffer.alloc(12 + name.split('').length);
+    packet = new Buffer.alloc(12 + name.split('').length);//need packet to be dynamic size, needs to fit all the bytes
 
-    let IT ='';
-    switch(ext){  //determine the image file ext in bits
-      case'bmp': case 'BMP':
-        IT = 1;
+    let extNum ='';//store extension number
+    switch(ext){  //get extension number corresponding to the extension type regardless of case
+      case'bmp':
+        extNum = 1;
         break;
-      case'jpeg': case'JPEG':
-        IT = 2;
+      case'jpeg':
+        extNum = 2;
         break;
-      case'GIF':case'gif':
-        IT =3;
+      case'gif':
+        extNum =3;
         break;
-      case'png':case'PNG':
-        IT = 4;
+      case'png':
+        extNum = 4;
         break;
-      case'tiff':case'TIFF':
-        IT = 5;
+      case'tiff':
+        extNum = 5;
         break;
       default:
-        IT = 15;
+        extNum = 15;
     }
 
-    storeBitPacket(packet, version, 0, 4)
-    storeBitPacket(packet, 0, 4, 28); //handle the query and reserved slots, all 0s
-    // storeBitPacket(packet, 0, 24, 8); 
-    storeBitPacket(packet, timeStamp, 32, 32);
-    storeBitPacket(packet, IT, 64, 4);
-    storeBitPacket(packet, name.split('').length, 68, 28);
+    storeBitPacket(packet, version, 0, 4)//store version
+    storeBitPacket(packet, 0, 4, 28); //store 0s for the resreved bits and the Request Type fields
+    storeBitPacket(packet, timeStamp, 32, 32);//store time
+    storeBitPacket(packet, extNum, 64, 4);//store extension number
+    storeBitPacket(packet, name.split('').length, 68, 28);//store payload size
 
-    for (let i = 0; i < name.split('').length; i++)
+    for (let i = 0; i < name.split('').length; i++)//store image name in a dynamic fashion
       storeBitPacket(packet, name.charCodeAt(i), 96+(8*i), 8);
-    
-
-    bytePacket = packet;
   },
 
   //--------------------------
   //getBytePacket: returns the entire packet in bytes
   //--------------------------
   getBytePacket: function () {
-    // enter your code here
-    return bytePacket;
+    return packet;
+    ;
   },
 };
 
-setInterval(tick, 10);  //check the timer every 10s
+setInterval(tick, 10);  //call tick every 10s
+
 function tick(){    //tick the timer
-    if ((timeStamp >= (Math.pow(2, 32) - 1)) || (timeStamp < 0))
-      timeStamp = Math.ceil(Math.random()*999);
-    timeStamp++; 
+    if ((timeStamp >= (Math.pow(2, 32) - 1)) || (timeStamp < 0))//reset time when reach 2^32
+        timeStamp = Math.ceil(Math.random()*999);
+    timeStamp++;//increase time
 }
 
 //// Some usefull methods ////

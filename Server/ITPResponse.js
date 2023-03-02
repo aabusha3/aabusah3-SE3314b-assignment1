@@ -1,57 +1,47 @@
-// You may need to add some delectation here
 var fs = require('fs');
-var imgs = fs.readdirSync('./images');
-let packet_send;
+var imgs = fs.readdirSync('./images'); //read all files in the images directory
+let packet; //this is the packet that is sent at the end
 module.exports = {
+    //--------------------------
+    //init: fills the response packet with the appropriate data
+    //--------------------------
+    init: function (fileName, seqNum, timeStamp, ver) { 
+        let imgLoc = `./images/${fileName}`;//the location of the requested file
+        let imgData = '';//the image itsefl in buffer array
+        let imgSize = 0;//the images size
+        let found = false;//flag trips if the request if found
 
-    init: function (name, ext, seqNum, timeStamp, ver) { 
-        let fileName = `${name}.${ext}`
-
-        let imgLoc = `./images/${fileName}`;
-        let imgData = '';
-        let imgSize = 0;
-        let found = false;
-
-        for (let i = 0; i < imgs.length; i++){
-            if (fileName == imgs[i]){
-                found = true;
+        for (let i = 0; i < imgs.length; i++){//loop through all the images to find a match with the requested name 
+            if (fileName == imgs[i]){//if found
+                found = true;//trip found flag
                 
-                imgData = fs.readFileSync(imgLoc);
-                imgSize = fs.statSync(imgLoc).size
+                imgData = fs.readFileSync(imgLoc);//load image data
+                imgSize = fs.statSync(imgLoc).size;//get the size of the image file from the image stat
             }
         }
-        let header = new Buffer.alloc(12);
-        storeBitPacket(header, ver, 0, 4);
+        let header = new Buffer.alloc(12);//create 12 byte space for header 
+        storeBitPacket(header, ver, 0, 4);//store version in the first 4 bits
 
-        if (found) storeBitPacket(header, 1, 4, 8);//store response type = 1
-        else storeBitPacket(header, 2, 4, 8);    //store response type = 2
+        if (found) storeBitPacket(header, 1, 4, 8);//store response type = 1 for 'found' response
+        else storeBitPacket(header, 2, 4, 8);    //store response type = 2 for 'not found' response
         
-        storeBitPacket(header, seqNum, 12, 20);
-        storeBitPacket(header, timeStamp, 32, 32);
-        storeBitPacket(header, imgSize, 64, 32);
-
-        let payload = new Buffer.alloc(imgData.length );
-        for (i = 0; i < imgData.length; i++) 
-            payload[i] = imgData[i];
+        storeBitPacket(header, seqNum, 12, 20);//store sequence number
+        storeBitPacket(header, timeStamp, 32, 32);//store time
+        storeBitPacket(header, imgSize, 64, 32);//store size
         
-        let packet = new Buffer.alloc(payload.length + header.length);
-        for (let h = 0; h < header.length; h++)
+        packet = new Buffer.alloc(imgData.length + header.length);//create space for response packet
+        for (let h = 0; h < header.length; h++)//push header into the response packet
             packet[h] = header[h];
-        for (let p = 0; p < payload.length; p++)
-            packet[p + header.length] = payload[p];
-            
-
-        packet_send = packet;
-
-        return found;
+        if (found) for (let p = 0; p < imgData.length; p++)//push payload into the response packet
+            packet[p + header.length] = imgData[p];
+    
     },
 
     //--------------------------
     //getpacket: returns the entire packet
     //--------------------------
     getPacket: function () {
-        // enter your code here
-        return packet_send;
+        return packet;//give response packet
     }
 };
 
