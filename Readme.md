@@ -1,0 +1,1 @@
+# please add the required images folder inside the Server folder
